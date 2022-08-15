@@ -1,0 +1,62 @@
+From: Helmut Grohne <helmut@subdivi.de>
+Date: Fri, 06 Sep 2019 21:41:32 +0200
+Subject: [PATCH] cross build fixes
+
+- waf tries running a simple hello world program.
+- waf performs sizeof checks by running programs.
+
+--- tevent-0.9.39.orig/buildtools/wafsamba/wscript
++++ tevent-0.9.39/buildtools/wafsamba/wscript
+@@ -298,7 +298,7 @@
+     conf.CHECK_CODE('printf("hello world")',
+                     define='HAVE_SIMPLE_C_PROG',
+                     mandatory=True,
+-                    execute=True,
++                    execute=False,
+                     headers='stdio.h',
+                     msg='Checking simple C program')
+ 
+--- tevent-0.9.39.orig/buildtools/wafsamba/samba_conftests.py
++++ tevent-0.9.39/buildtools/wafsamba/samba_conftests.py
+@@ -86,9 +86,9 @@
+     '''see what we need for largefile support'''
+     getconf_cflags = conf.CHECK_COMMAND(['getconf', 'LFS_CFLAGS']);
+     if getconf_cflags is not False:
+-        if (conf.CHECK_CODE('if (sizeof(off_t) < 8) return 1',
++        if (conf.CHECK_CODE('char dummy[(sizeof(off_t) < 8) ? -1 : 1',
+                             define='WORKING_GETCONF_LFS_CFLAGS',
+-                            execute=True,
++                            execute=False,
+                             cflags=getconf_cflags,
+                             msg='Checking getconf large file support flags work')):
+             conf.ADD_CFLAGS(getconf_cflags)
+@@ -101,23 +101,23 @@
+                     else:
+                         conf.DEFINE(flag_split[0], flag_split[1])
+ 
+-    if conf.CHECK_CODE('if (sizeof(off_t) < 8) return 1',
++    if conf.CHECK_CODE('char dummy[(sizeof(off_t) < 8) ? -1 : 1',
+                        define,
+-                       execute=True,
++                       execute=False,
+                        msg='Checking for large file support without additional flags'):
+         return True
+ 
+-    if conf.CHECK_CODE('if (sizeof(off_t) < 8) return 1',
++    if conf.CHECK_CODE('char dummy[(sizeof(off_t) < 8) ? -1 : 1]',
+                        define,
+-                       execute=True,
++                       execute=False,
+                        cflags='-D_FILE_OFFSET_BITS=64',
+                        msg='Checking for -D_FILE_OFFSET_BITS=64'):
+         conf.DEFINE('_FILE_OFFSET_BITS', 64)
+         return True
+ 
+-    if conf.CHECK_CODE('if (sizeof(off_t) < 8) return 1',
++    if conf.CHECK_CODE('char dummy[(sizeof(off_t) < 8) ? -1 : 1]',
+                        define,
+-                       execute=True,
++                       execute=False,
+                        cflags='-D_LARGE_FILES',
+                        msg='Checking for -D_LARGE_FILES'):
+         conf.DEFINE('_LARGE_FILES', 1)

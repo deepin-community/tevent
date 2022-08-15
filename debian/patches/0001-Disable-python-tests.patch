@@ -1,0 +1,29 @@
+From e6d9af8a1ca6134e02ba09212756d87f4f38f7e6 Mon Sep 17 00:00:00 2001
+From: Mathieu Parent <math.parent@gmail.com>
+Date: Fri, 13 Sep 2019 19:46:27 +0200
+Subject: [PATCH] Disable python tests
+
+As python-tevent is not built.
+
+Forwarded: not-needed
+---
+ wscript | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/wscript b/wscript
+index 3d0d71d..f4b0c26 100644
+--- a/wscript
++++ b/wscript
+@@ -152,7 +152,8 @@ def test(ctx):
+     samba_utils.ADD_LD_LIBRARY_PATH('bin/shared')
+     samba_utils.ADD_LD_LIBRARY_PATH('bin/shared/private')
+ 
+-    pyret = samba_utils.RUN_PYTHON_TESTS(['bindings.py'])
++    # pyret = samba_utils.RUN_PYTHON_TESTS(['bindings.py'])
++    pyret = 0
+ 
+     unit_test_ret = 0
+     unit_tests = [
+-- 
+2.30.2
+
