@@ -35,6 +35,13 @@ libtevent.so.0 #PACKAGE# #MINVER#
  TEVENT_0.10.1@TEVENT_0.10.1 0.10.1
  TEVENT_0.10.2@TEVENT_0.10.2 0.10.2
  TEVENT_0.11.0@TEVENT_0.11.0 0.11.0
+ TEVENT_0.12.0@TEVENT_0.12.0 0.12.0
+ TEVENT_0.12.1@TEVENT_0.12.1 0.12.1
+ TEVENT_0.13.0@TEVENT_0.13.0 0.13.0
+ TEVENT_0.14.0@TEVENT_0.14.0 0.14.0
+ TEVENT_0.14.1@TEVENT_0.14.1 0.14.1
+ TEVENT_0.15.0@TEVENT_0.15.0 0.15.0
+ __tevent_req_create@TEVENT_0.15.0 0.15.0
  _tevent_add_fd@TEVENT_0.9.9 0.9.9
  _tevent_add_signal@TEVENT_0.9.9 0.9.9
  _tevent_add_timer@TEVENT_0.9.9 0.9.9
@@ -45,6 +52,9 @@ libtevent.so.0 #PACKAGE# #MINVER#
  _tevent_loop_once@TEVENT_0.9.9 0.9.9
  _tevent_loop_until@TEVENT_0.9.9 0.9.9
  _tevent_loop_wait@TEVENT_0.9.9 0.9.9
+ _tevent_queue_add@TEVENT_0.15.0 0.15.0
+ _tevent_queue_add_entry@TEVENT_0.15.0 0.15.0
+ _tevent_queue_add_optimize_empty@TEVENT_0.15.0 0.15.0
  _tevent_queue_create@TEVENT_0.9.9 0.9.9
  _tevent_req_callback_data@TEVENT_0.9.9 0.9.9
  _tevent_req_cancel@TEVENT_0.9.9 0.9.9
@@ -55,10 +65,15 @@ libtevent.so.0 #PACKAGE# #MINVER#
  _tevent_req_nomem@TEVENT_0.9.9 0.9.9
  _tevent_req_notify_callback@TEVENT_0.9.9 0.9.9
  _tevent_req_oom@TEVENT_0.9.12 0.9.12
+ _tevent_req_set_callback@TEVENT_0.15.0 0.15.0
+ _tevent_req_set_cancel_fn@TEVENT_0.15.0 0.15.0
+ _tevent_req_set_cleanup_fn@TEVENT_0.15.0 0.15.0
  _tevent_schedule_immediate@TEVENT_0.9.9 0.9.9
+ _tevent_thread_call_depth_reset_from_req@TEVENT_0.15.0 0.15.0
  _tevent_threaded_schedule_immediate@TEVENT_0.9.30 0.9.31
  tevent_abort@TEVENT_0.9.37 0.9.37
  tevent_backend_list@TEVENT_0.9.9 0.9.9
+ tevent_cached_getpid@TEVENT_0.13.0 0.13.0
  tevent_cleanup_pending_signal_handlers@TEVENT_0.9.9 0.9.9
  tevent_common_add_fd@TEVENT_0.9.9 0.9.9
  tevent_common_add_signal@TEVENT_0.9.9 0.9.9
@@ -96,9 +111,11 @@ libtevent.so.0 #PACKAGE# #MINVER#
  tevent_fd_set_close_fn@TEVENT_0.9.9 0.9.9
  tevent_fd_set_flags@TEVENT_0.9.9 0.9.9
  tevent_fd_set_tag@TEVENT_0.11.0 0.11.0
+ tevent_find_ops_byname@TEVENT_0.14.0 0.14.0
  tevent_get_trace_callback@TEVENT_0.9.16 0.9.16
  tevent_get_trace_fd_callback@TEVENT_0.11.0 0.11.0
  tevent_get_trace_immediate_callback@TEVENT_0.11.0 0.11.0
+ tevent_get_trace_queue_callback@TEVENT_0.12.0 0.12.0
  tevent_get_trace_signal_callback@TEVENT_0.11.0 0.11.0
  tevent_get_trace_timer_callback@TEVENT_0.11.0 0.11.0
  tevent_immediate_get_tag@TEVENT_0.11.0 0.11.0
@@ -109,6 +126,8 @@ libtevent.so.0 #PACKAGE# #MINVER#
  tevent_queue_add@TEVENT_0.9.9 0.9.9
  tevent_queue_add_entry@TEVENT_0.9.14 0.9.14
  tevent_queue_add_optimize_empty@TEVENT_0.9.14 0.9.14
+ tevent_queue_entry_get_tag@TEVENT_0.12.0 0.12.0
+ tevent_queue_entry_set_tag@TEVENT_0.12.0 0.12.0
  tevent_queue_length@TEVENT_0.9.9 0.9.9
  tevent_queue_entry_untrigger@TEVENT_0.9.36 0.9.36
  tevent_queue_running@TEVENT_0.9.14 0.9.14
@@ -152,14 +171,21 @@ libtevent.so.0 #PACKAGE# #MINVER#
  tevent_set_debug@TEVENT_0.9.9 0.9.9
  tevent_set_debug_stderr@TEVENT_0.9.9 0.9.9
  tevent_set_default_backend@TEVENT_0.9.9 0.9.9
+ tevent_set_max_debug_level@TEVENT_0.15.0 0.15.0
  tevent_set_trace_callback@TEVENT_0.9.16 0.9.16
  tevent_set_trace_fd_callback@TEVENT_0.11.0 0.11.0
  tevent_set_trace_immediate_callback@TEVENT_0.11.0 0.11.0
+ tevent_set_trace_queue_callback@TEVENT_0.12.0 0.12.0
  tevent_set_trace_signal_callback@TEVENT_0.11.0 0.11.0
  tevent_set_trace_timer_callback@TEVENT_0.11.0 0.11.0
  tevent_signal_get_tag@TEVENT_0.11.0 0.11.0
  tevent_signal_set_tag@TEVENT_0.11.0 0.11.0
  tevent_signal_support@TEVENT_0.9.9 0.9.9
+ tevent_thread_call_depth_activate@TEVENT_0.14.0 0.14.0
+ tevent_thread_call_depth_deactivate@TEVENT_0.14.0 0.14.0
+ tevent_thread_call_depth_reset_from_req@TEVENT_0.14.0 0.14.0
+ tevent_thread_call_depth_set_callback@TEVENT_0.15.0 0.15.0
+ tevent_thread_call_depth_start@TEVENT_0.14.0 0.14.0
  tevent_thread_proxy_create@TEVENT_0.9.26 0.9.26
  tevent_thread_proxy_schedule@TEVENT_0.9.26 0.9.26
  tevent_threaded_context_create@TEVENT_0.9.30 0.9.30
@@ -176,6 +202,7 @@ libtevent.so.0 #PACKAGE# #MINVER#
  tevent_trace_fd_callback@TEVENT_0.11.0 0.11.0
  tevent_trace_immediate_callback@TEVENT_0.11.0 0.11.0
  tevent_trace_point_callback@TEVENT_0.9.16 0.9.16
+ tevent_trace_queue_callback@TEVENT_0.12.0 0.12.0
  tevent_trace_signal_callback@TEVENT_0.11.0 0.11.0
  tevent_trace_timer_callback@TEVENT_0.11.0 0.11.0
  tevent_update_timer@TEVENT_0.9.31 0.9.31

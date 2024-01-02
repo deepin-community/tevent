@@ -146,7 +146,7 @@ def header_list(conf, headers=None, lib=None):
 
 
 @conf
-def CHECK_TYPE(conf, t, alternate=None, headers=None, define=None, lib=None, msg=None):
+def CHECK_TYPE(conf, t, alternate=None, headers=None, define=None, lib=None, msg=None, cflags=''):
     '''check for a single type'''
     if define is None:
         define = 'HAVE_' + t.upper().replace(' ', '_')
@@ -158,6 +158,7 @@ def CHECK_TYPE(conf, t, alternate=None, headers=None, define=None, lib=None, msg
                      headers=headers,
                      local_include=False,
                      msg=msg,
+                     cflags=cflags,
                      lib=lib,
                      link=False)
     if not ret and alternate:
@@ -177,14 +178,15 @@ def CHECK_TYPES(conf, list, headers=None, define=None, alternate=None, lib=None)
 
 
 @conf
-def CHECK_TYPE_IN(conf, t, headers=None, alternate=None, define=None):
+def CHECK_TYPE_IN(conf, t, headers=None, alternate=None, define=None, cflags=''):
     '''check for a single type with a header'''
-    return CHECK_TYPE(conf, t, headers=headers, alternate=alternate, define=define)
+    return CHECK_TYPE(conf, t, headers=headers, alternate=alternate, define=define, cflags=cflags)
 
 
 @conf
 def CHECK_VARIABLE(conf, v, define=None, always=False,
-                   headers=None, msg=None, lib=None):
+                   headers=None, msg=None, lib=None,
+                   mandatory=False):
     '''check for a variable declaration (or define)'''
     if define is None:
         define = 'HAVE_%s' % v.upper()
@@ -208,11 +210,12 @@ def CHECK_VARIABLE(conf, v, define=None, always=False,
                       lib=lib,
                       headers=headers,
                       define=define,
+                      mandatory=mandatory,
                       always=always)
 
 
 @conf
-def CHECK_DECLS(conf, vars, reverse=False, headers=None, always=False):
+def CHECK_DECLS(conf, vars, reverse=False, headers=None, lib=None, always=False):
     '''check a list of variable declarations, using the HAVE_DECL_xxx form
        of define
 
@@ -227,6 +230,7 @@ def CHECK_DECLS(conf, vars, reverse=False, headers=None, always=False):
         if not CHECK_VARIABLE(conf, v,
                               define=define,
                               headers=headers,
+                              lib=lib,
                               msg='Checking for declaration of %s' % v,
                               always=always):
             if not CHECK_CODE(conf,
@@ -238,6 +242,7 @@ def CHECK_DECLS(conf, vars, reverse=False, headers=None, always=False):
                       msg='Checking for declaration of %s (as enum)' % v,
                       local_include=False,
                       headers=headers,
+                      lib=lib,
                       define=define,
                       always=always):
                 ret = False
@@ -342,7 +347,24 @@ def CHECK_SIZEOF(conf, vars, headers=None, define=None, critical=True):
     return ret
 
 @conf
-def CHECK_VALUEOF(conf, v, headers=None, define=None):
+def CHECK_SIGN(conf, v, headers=None):
+    '''check the sign of a type'''
+    define_name = v.upper().replace(' ', '_')
+    for op, signed in [('<', 'signed'),
+                       ('>', 'unsigned')]:
+        if CHECK_CODE(conf,
+                      f'static int test_array[1 - 2 * !((({v})-1) {op} 0)];',
+                      define=f'{define_name}_{signed.upper()}',
+                      quote=False,
+                      headers=headers,
+                      local_include=False,
+                      msg=f"Checking if '{v}' is {signed}"):
+            return True
+
+    return False
+
+@conf
+def CHECK_VALUEOF(conf, v, headers=None, define=None, lib=None):
     '''check the value of a variable/define'''
     ret = True
     v_define = define
@@ -354,6 +376,7 @@ def CHECK_VALUEOF(conf, v, headers=None, define=None):
                   execute=True,
                   define_ret=True,
                   quote=False,
+                  lib=lib,
                   headers=headers,
                   local_include=False,
                   msg="Checking value of %s" % v):
@@ -755,6 +778,8 @@ def SAMBA_CONFIG_H(conf, path=None):
                         testflags=True)
         conf.ADD_CFLAGS('-Werror-implicit-function-declaration',
                         testflags=True)
+        conf.ADD_CFLAGS('-Werror=implicit-int',
+                        testflags=True)
         conf.ADD_CFLAGS('-Werror=pointer-arith -Wpointer-arith',
                         testflags=True)
         conf.ADD_CFLAGS('-Werror=declaration-after-statement -Wdeclaration-after-statement',
@@ -766,6 +791,8 @@ def SAMBA_CONFIG_H(conf, path=None):
         conf.ADD_CFLAGS('-Wimplicit-fallthrough',
                         testflags=True)
         conf.ADD_CFLAGS('-Werror=strict-overflow -Wstrict-overflow=2',
+                        testflags=True)
+        conf.ADD_CFLAGS('-Werror=old-style-definition -Wold-style-definition',
                         testflags=True)
 
         conf.ADD_CFLAGS('-Wformat=2 -Wno-format-y2k', testflags=True)
@@ -787,6 +814,9 @@ int main(void) {
                 conf.env['EXTRA_CFLAGS'] = []
             conf.env['EXTRA_CFLAGS'].extend(TO_LIST("-Werror=format"))
 
+        if CHECK_CFLAGS(conf, ["-Wno-error=array-bounds"]):
+            conf.define('HAVE_WNO_ERROR_ARRAY_BOUNDS', 1)
+
         if not Options.options.disable_warnings_as_errors:
             conf.ADD_NAMED_CFLAGS('PICKY_CFLAGS', '-Werror -Wno-error=deprecated-declarations', testflags=True)
             conf.ADD_NAMED_CFLAGS('PICKY_CFLAGS', '-Wno-error=tautological-compare', testflags=True)
@@ -801,8 +831,10 @@ int main(void) {
     if (Options.options.address_sanitizer or
         Options.options.undefined_sanitizer):
         conf.ADD_CFLAGS('-g -O1', testflags=True)
-    if Options.options.address_sanitizer:
+    if (Options.options.address_sanitizer
+       or Options.options.memory_sanitizer):
         conf.ADD_CFLAGS('-fno-omit-frame-pointer', testflags=True)
+    if Options.options.address_sanitizer:
         conf.ADD_CFLAGS('-fsanitize=address', testflags=True)
         conf.ADD_LDFLAGS('-fsanitize=address', testflags=True)
         conf.env['ADDRESS_SANITIZER'] = True
@@ -813,6 +845,13 @@ int main(void) {
         conf.ADD_LDFLAGS('-fsanitize=undefined', testflags=True)
         conf.env['UNDEFINED_SANITIZER'] = True
 
+    # MemorySanitizer is only available if you build with clang
+    if Options.options.memory_sanitizer:
+        conf.ADD_CFLAGS('-g -O2', testflags=True)
+        conf.ADD_CFLAGS('-fsanitize=memory', testflags=True)
+        conf.ADD_CFLAGS('-fsanitize-memory-track-origins=2', testflags=True)
+        conf.ADD_LDFLAGS('-fsanitize=memory')
+        conf.env['MEMORY_SANITIZER'] = True
 
     # Let people pass an additional ADDITIONAL_{CFLAGS,LDFLAGS}
     # environment variables which are only used the for final build.
@@ -854,10 +893,12 @@ def CONFIG_PATH(conf, name, default):
             conf.env[name] = conf.env['PREFIX'] + default
 
 @conf
-def ADD_NAMED_CFLAGS(conf, name, flags, testflags=False, prereq_flags=[]):
+def ADD_NAMED_CFLAGS(conf, name, flags, testflags=False, prereq_flags=None):
     '''add some CFLAGS to the command line
        optionally set testflags to ensure all the flags work
     '''
+    if prereq_flags is None:
+        prereq_flags = []
     prereq_flags = TO_LIST(prereq_flags)
     if testflags:
         ok_flags=[]
@@ -870,10 +911,12 @@ def ADD_NAMED_CFLAGS(conf, name, flags, testflags=False, prereq_flags=[]):
     conf.env[name].extend(TO_LIST(flags))
 
 @conf
-def ADD_CFLAGS(conf, flags, testflags=False, prereq_flags=[]):
+def ADD_CFLAGS(conf, flags, testflags=False, prereq_flags=None):
     '''add some CFLAGS to the command line
        optionally set testflags to ensure all the flags work
     '''
+    if prereq_flags is None:
+        prereq_flags = []
     ADD_NAMED_CFLAGS(conf, 'EXTRA_CFLAGS', flags, testflags=testflags,
                      prereq_flags=prereq_flags)
 
@@ -940,7 +983,7 @@ def SETUP_CONFIGURE_CACHE(conf, enable):
     '''enable/disable cache of configure results'''
     if enable:
         # when -C is chosen, we will use a private cache and will
-        # not look into system includes. This roughtly matches what
+        # not look into system includes. This roughly matches what
         # autoconf does with -C
         cache_path = os.path.join(conf.bldnode.abspath(), '.confcache')
         mkdir_p(cache_path)
@@ -957,7 +1000,9 @@ def SETUP_CONFIGURE_CACHE(conf, enable):
 
 @conf
 def SAMBA_CHECK_UNDEFINED_SYMBOL_FLAGS(conf):
-    if Options.options.address_sanitizer or Options.options.enable_libfuzzer:
+    if (Options.options.address_sanitizer
+       or Options.options.memory_sanitizer
+       or Options.options.enable_libfuzzer):
         # Sanitizers can rely on symbols undefined at library link time and the
         # symbols used for fuzzers are only defined by compiler wrappers.
         return

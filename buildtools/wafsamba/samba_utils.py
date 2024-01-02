@@ -237,10 +237,10 @@ def TO_LIST(str, delimiter=None):
 
 def subst_vars_error(string, env):
     '''substitute vars, throw an error if a variable is not defined'''
-    lst = re.split('(\$\{\w+\})', string)
+    lst = re.split(r'(\$\{\w+\})', string)
     out = []
     for v in lst:
-        if re.match('\$\{\w+\}', v):
+        if re.match(r'\$\{\w+\}', v):
             vname = v[2:-1]
             if not vname in env:
                 raise KeyError("Failed to find variable %s in %s in env %s <%s>" % (vname, string, env.__class__, str(env)))
@@ -327,7 +327,7 @@ def EXPAND_VARIABLES(ctx, varstr, vars=None):
 
     env = ConfigSet.ConfigSet()
     ret = varstr
-    # substitute on user supplied dict if avaiilable
+    # substitute on user supplied dict if available
     if vars is not None:
         for v in vars.keys():
             env[v] = vars[v]
@@ -465,8 +465,7 @@ def RECURSE(ctx, directory):
                     'CleanContext',
                     'InstallContext',
                     'UninstallContext',
-                    'ListContext',
-                    'ClangDbContext']:
+                    'ListContext']:
         return ctx.recurse(relpath)
     if 'waflib.extras.compat15' in sys.modules:
         return ctx.recurse(relpath)
@@ -658,7 +657,7 @@ def get_tgt_list(bld):
     tgt_list = []
     for tgt in targets:
         type = targets[tgt]
-        if not type in ['SUBSYSTEM', 'MODULE', 'BINARY', 'LIBRARY', 'ASN1', 'PYTHON']:
+        if not type in ['SUBSYSTEM', 'BUILTIN', 'MODULE', 'BINARY', 'LIBRARY', 'PLUGIN', 'ASN1', 'PYTHON']:
             continue
         t = bld.get_tgen_by_name(tgt)
         if t is None:
