@@ -1,56 +1,56 @@
 #!/usr/bin/make -f
+SHELL = /bin/sh -e
 
-# Export CC and PKGCONFIG for waf
--include /usr/share/dpkg/buildtools.mk
-export CC
-PKG_CONFIG ?= pkg-config
-export PKGCONFIG=${PKG_CONFIG}
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+export DEB_CFLAGS_MAINT_APPEND = -g -Wall
+export DPKG_GENSYMBOLS_CHECK_LEVEL = 4
 
-CFLAGS = -g -Wall
-
-ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
-CFLAGS += -O0
-else
-CFLAGS += -O2
+# Fast version of dpkg/architecture.mk defining all vars in one go
+ifeq (${DEB_HOST_MULTIARCH},)
+   $(foreach d, $(shell dpkg-architecture | sed 's/=/?=/'), $(eval export $d))
 endif
+include /usr/share/dpkg/buildflags.mk
+V := $(if $(filter terse, ${DEB_BUILD_OPTIONS}),,1)
+WAF := PYTHONHASHSEED=1 ./buildtools/bin/waf \
+	$(patsubst parallel=%,-j%,$(filter parallel=%,${DEB_BUILD_OPTIONS}))
 
-LDFLAGS += -Wl,--as-needed
+DESTDIR = ${CURDIR}/debian/tmp
 
-DESTDIR=$(CURDIR)/debian/tmp
-
-include /usr/share/dpkg/architecture.mk
-
-%:
+build-arch build-indep build \
+install-indep install-arch install \
+binary-arch binary-indep binary \
+: %:
 	dh $@
 
-override_dh_auto_configure:
-	CFLAGS="$(CFLAGS)" ./configure --prefix=/usr --bundled-libraries=NONE \
-		   --disable-rpath --disable-rpath-install --disable-python \
-		   --minimum-library-version="$(shell ./debian/autodeps.py --minimum-library-version)" \
-		   --libdir=/usr/lib/$(DEB_HOST_MULTIARCH)
+override_dh_auto_configure: bin/config-stamp
+bin/config-stamp:
+	CPPFLAGS="${CPPFLAGS}" CFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}" \
+	    ${WAF} -j1 -C configure \
+		--prefix=/usr \
+		--libdir=/usr/lib/${DEB_HOST_MULTIARCH} \
+		--disable-rpath --disable-rpath-install \
+		--bundled-libraries=NONE \
+		--disable-python \
+	    && touch $@
 
-override_dh_auto_build:
-	$(MAKE) all
+override_dh_auto_build: bin/config-stamp
+	${WAF} build $(if $V,-v)
+	# Waf should be doing this..
+	ar cr bin/libtevent.a bin/default/*.o
+
+override_dh_auto_test:
+ifeq (,$(filter nocheck,${DEB_BUILD_OPTIONS}))
+# for some weird reason, salsa-ci run build with fd#0 *closed*(!) and the test fail
+	${WAF} test </dev/null
+endif
+
+override_dh_auto_install:
+	${WAF} install --destdir=${DESTDIR}
+	cp bin/libtevent.a ${DESTDIR}/usr/lib/${DEB_HOST_MULTIARCH}
+
+clean:
+	# see also debian/clean
+	dh_clean bin/ compile_commands.json
 
 get-packaged-orig-source:
 	./debian/build-orig.sh
-
-override_dh_auto_clean:
-	-./buildtools/bin/waf clean
-	rm -rf buildtools/wafsamba/*.pyc \
-		buildtools/wafsamba/__pycache__ \
-		third_party/waf/wafadmin/*.pyc \
-		third_party/waf/wafadmin/Tools/*.pyc \
-		third_party/waf/waflib/Tools/__pycache__ \
-		third_party/waf/waflib/__pycache__ \
-		third_party/waf/waflib/extras/__pycache__
-	rm -rf bin
-	rm -f .lock-wscript libtevent.a
-
-override_dh_auto_install:
-	$(MAKE) install DESTDIR=$(DESTDIR)
-	ar cr libtevent.a bin/default/*.o
-	cp libtevent.a $(DESTDIR)/usr/lib/$(DEB_HOST_MULTIARCH)
-
-override_dh_makeshlibs:
-	dh_makeshlibs -- -c4

@@ -5,18 +5,8 @@ from waflib import Build, Options, Logs
 from waflib.Configure import conf
 from wafsamba import samba_utils
 
-def PRIVATE_NAME(bld, name, private_extension, private_library):
+def PRIVATE_NAME(bld, name):
     '''possibly rename a library to include a bundled extension'''
-
-    if not private_library:
-        return name
-
-    # we now use the same private name for libraries as the public name.
-    # see http://git.samba.org/?p=tridge/junkcode.git;a=tree;f=shlib for a
-    # demonstration that this is the right thing to do
-    # also see http://lists.samba.org/archive/samba-technical/2011-January/075816.html
-    if private_extension:
-        return name
 
     extension = bld.env.PRIVATE_EXTENSION
 
@@ -67,7 +57,7 @@ Options.OptionsContext.PRIVATE_EXTENSION_DEFAULT = PRIVATE_EXTENSION_DEFAULT
 
 
 def minimum_library_version(conf, libname, default):
-    '''allow override of mininum system library version'''
+    '''allow override of minimum system library version'''
 
     minlist = Options.options.MINIMUM_LIBRARY_VERSION
     if not minlist:
@@ -95,29 +85,33 @@ def LIB_MAY_BE_BUNDLED(conf, libname):
         return False
     return True
 
-@conf
-def LIB_MUST_BE_BUNDLED(conf, libname):
-    if libname in conf.env.BUNDLED_LIBS:
+def __LIB_MUST_BE(liblist, libname):
+    if libname in liblist:
         return True
-    if '!%s' % libname in conf.env.BUNDLED_LIBS:
+    if '!%s' % libname in liblist:
         return False
-    if 'ALL' in conf.env.BUNDLED_LIBS:
+    if 'ALL' in liblist:
         return True
     return False
 
 @conf
+def LIB_MUST_BE_BUNDLED(conf, libname):
+    return __LIB_MUST_BE(conf.env.BUNDLED_LIBS, libname)
+
+@conf
 def LIB_MUST_BE_PRIVATE(conf, libname):
-    return ('ALL' in conf.env.PRIVATE_LIBS or
-            libname in conf.env.PRIVATE_LIBS)
+    return __LIB_MUST_BE(conf.env.PRIVATE_LIBS, libname)
 
 @conf
 def CHECK_BUNDLED_SYSTEM_PKG(conf, libname, minversion='0.0.0',
-        maxversion=None, version_blacklist=[],
+        maxversion=None, version_blacklist=None,
         onlyif=None, implied_deps=None, pkg=None):
     '''check if a library is available as a system library.
 
     This only tries using pkg-config
     '''
+    if version_blacklist is None:
+        version_blacklist = []
     return conf.CHECK_BUNDLED_SYSTEM(libname,
                                      minversion=minversion,
                                      maxversion=maxversion,
@@ -128,7 +122,7 @@ def CHECK_BUNDLED_SYSTEM_PKG(conf, libname, minversion='0.0.0',
 
 @conf
 def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
-                         maxversion=None, version_blacklist=[],
+                         maxversion=None, version_blacklist=None,
                          checkfunctions=None, headers=None, checkcode=None,
                          onlyif=None, implied_deps=None,
                          require_headers=True, pkg=None, set_target=True):
@@ -137,6 +131,8 @@ def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
     tries by testing for a specified function in the specified lib
     '''
     # We always do a logic validation of 'onlyif' first
+    if version_blacklist is None:
+        version_blacklist = []
     missing = []
     if onlyif:
         for l in samba_utils.TO_LIST(onlyif):
