@@ -4,11 +4,11 @@ Subject: [PATCH] cross build fixes
 
 - waf performs sizeof checks by running programs.
 
---- tevent-0.9.39.orig/buildtools/wafsamba/samba_conftests.py
-+++ tevent-0.9.39/buildtools/wafsamba/samba_conftests.py
-@@ -86,9 +86,9 @@
+--- tevent.orig/buildtools/wafsamba/samba_conftests.py
++++ tevent/buildtools/wafsamba/samba_conftests.py
+@@ -86,9 +86,9 @@ def CHECK_LARGEFILE(conf, define='HAVE_L
      '''see what we need for largefile support'''
-     getconf_cflags = conf.CHECK_COMMAND(['getconf', 'LFS_CFLAGS']);
+     getconf_cflags = conf.CHECK_COMMAND(['getconf', 'LFS_CFLAGS'])
      if getconf_cflags is not False:
 -        if (conf.CHECK_CODE('if (sizeof(off_t) < 8) return 1',
 +        if (conf.CHECK_CODE('char dummy[(sizeof(off_t) < 8) ? -1 : 1]',
@@ -18,7 +18,7 @@ Subject: [PATCH] cross build fixes
                              cflags=getconf_cflags,
                              msg='Checking getconf large file support flags work')):
              conf.ADD_CFLAGS(getconf_cflags)
-@@ -101,23 +101,23 @@
+@@ -101,23 +101,23 @@ def CHECK_LARGEFILE(conf, define='HAVE_L
                      else:
                          conf.DEFINE(flag_split[0], flag_split[1])
  

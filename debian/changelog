@@ -1,3 +1,12 @@
+tevent (0.16.1-1) unstable; urgency=medium
+
+  * new upstream release
+  * d/control: update libtalloc version for Build-Depends
+  * d/patches/cross.patch: refresh
+  * d/libtevent0.symbols: update symbols file with new version
+
+ -- Michael Tokarev <mjt@tls.msk.ru>  Mon, 29 Jan 2024 20:15:38 +0300
+
 tevent (0.15.0-1) unstable; urgency=medium
 
   * new upstream release (requires talloc 2.4.1; new symbols)
